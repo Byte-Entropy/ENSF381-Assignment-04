@@ -40,6 +40,27 @@ def find_user_by_id(user_id):
     return next((u for u in users if u["id"] == user_id), None)
 
 
+def ensure_user_by_id(user_id):
+    user = find_user_by_id(user_id)
+    if user:
+        return user
+
+    # Recover a missing session user so cart/order requests keep working after a backend restart.
+    placeholder_user = {
+        "id": user_id,
+        "username": f"user_{user_id}",
+        "email": "",
+        "password_hash": "",
+        "cart": [],
+        "orders": []
+    }
+    users.append(placeholder_user)
+
+    global next_user_id
+    next_user_id = max(next_user_id, user_id + 1)
+    return placeholder_user
+
+
 def find_flavor_by_id(flavor_id):
     return next((f for f in flavors_data if f["id"] == flavor_id), None)
 
@@ -165,9 +186,7 @@ def get_flavors():
 @app.route("/cart", methods=["GET"])
 def get_cart():
     user_id = request.args.get("userId", type=int)
-    user = find_user_by_id(user_id)
-    if not user:
-        return jsonify({"success": False, "message": "User not found."}), 404
+    user = ensure_user_by_id(user_id)
 
     return jsonify({
         "success": True,
@@ -184,11 +203,9 @@ def add_to_cart():
     user_id   = data.get("userId")
     flavor_id = data.get("flavorId")
 
-    user   = find_user_by_id(user_id)
+    user   = ensure_user_by_id(user_id)
     flavor = find_flavor_by_id(flavor_id)
 
-    if not user:
-        return jsonify({"success": False, "message": "User not found."}), 404
     if not flavor:
         return jsonify({"success": False, "message": "Flavor not found."}), 404
 
@@ -223,9 +240,7 @@ def update_cart():
     flavor_id = data.get("flavorId")
     quantity  = data.get("quantity")
 
-    user = find_user_by_id(user_id)
-    if not user:
-        return jsonify({"success": False, "message": "User not found."}), 404
+    user = ensure_user_by_id(user_id)
 
     cart_item = next((i for i in user["cart"] if i["flavorId"] == flavor_id), None)
     if not cart_item:
@@ -251,9 +266,7 @@ def remove_from_cart():
     user_id   = data.get("userId")
     flavor_id = data.get("flavorId")
 
-    user = find_user_by_id(user_id)
-    if not user:
-        return jsonify({"success": False, "message": "User not found."}), 404
+    user = ensure_user_by_id(user_id)
 
     user["cart"] = [i for i in user["cart"] if i["flavorId"] != flavor_id]
 
@@ -274,9 +287,7 @@ def place_order():
     data    = request.get_json()
     user_id = data.get("userId")
 
-    user = find_user_by_id(user_id)
-    if not user:
-        return jsonify({"success": False, "message": "User not found."}), 404
+    user = ensure_user_by_id(user_id)
     if not user["cart"]:
         return jsonify({"success": False, "message": "Cart is empty."}), 400
 
@@ -314,10 +325,7 @@ def get_orders():
       2. Return their orders list (empty list is valid for a new user).
     """
     user_id = request.args.get("userId", type=int)
-    user    = find_user_by_id(user_id)
-
-    if not user:
-        return jsonify({"success": False, "message": "User not found."}), 404
+    user    = ensure_user_by_id(user_id)
 
     return jsonify({
         "success": True,
