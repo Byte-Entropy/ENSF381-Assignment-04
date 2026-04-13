@@ -1,0 +1,28 @@
+const reviews = [
+{
+customerName:"Alice Johnson",
+flavorName:"Vanilla Dream",
+review:"The ice cream was delicious and very creamy!",
+rating:5
+},
+{
+customerName:"David Lee",
+flavorName:"Chocolate Heaven",
+review:"Best chocolate ice cream I ever had.",
+rating:4
+},
+{
+customerName:"Maria Lopez",
+flavorName:"Strawberry Bliss",
+review:"Fresh and sweet flavor!",
+rating:5
+},
+{
+customerName:"James Smith",
+flavorName:"Mint Magic",
+review:"Refreshing and tasty.",
+rating:4
+}
+];
+
+export default reviews;
